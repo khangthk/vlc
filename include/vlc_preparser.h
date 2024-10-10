@@ -43,13 +43,51 @@
  */
 typedef struct vlc_preparser_t vlc_preparser_t;
 
+typedef enum input_item_meta_request_option_t
+{
+    META_REQUEST_OPTION_NONE          = 0x00,
+    META_REQUEST_OPTION_SCOPE_LOCAL   = 0x01,
+    META_REQUEST_OPTION_SCOPE_NETWORK = 0x02,
+    META_REQUEST_OPTION_SCOPE_ANY     =
+        META_REQUEST_OPTION_SCOPE_LOCAL|META_REQUEST_OPTION_SCOPE_NETWORK,
+    META_REQUEST_OPTION_SCOPE_FORCED  = 0x04,
+    META_REQUEST_OPTION_FETCH_LOCAL   = 0x08,
+    META_REQUEST_OPTION_FETCH_NETWORK = 0x10,
+    META_REQUEST_OPTION_FETCH_ANY     =
+        META_REQUEST_OPTION_FETCH_LOCAL|META_REQUEST_OPTION_FETCH_NETWORK,
+    META_REQUEST_OPTION_DO_INTERACT   = 0x20,
+    META_REQUEST_OPTION_PARSE_SUBITEMS = 0x40,
+} input_item_meta_request_option_t;
+
+/* status of the on_preparse_ended() callback */
+enum input_item_preparse_status
+{
+    ITEM_PREPARSE_SKIPPED,
+    ITEM_PREPARSE_FAILED,
+    ITEM_PREPARSE_TIMEOUT,
+    ITEM_PREPARSE_DONE
+};
+
+struct vlc_metadata_cbs {
+    void (*on_preparse_ended)(input_item_t *, enum input_item_preparse_status status, void *userdata);
+    void (*on_art_fetch_ended)(input_item_t *, bool fetched, void *userdata);
+    void (*on_subtree_added)(input_item_t *, input_item_node_t *subtree, void *userdata);
+    void (*on_attachments_added)(input_item_t *item,
+                                 input_attachment_t *const *array,
+                                 size_t count, void *userdata);
+};
+
 /**
  * This function creates the preparser object and thread.
  *
  * @param obj the parent object
+ * @param max_threads the maximum number of threads used to parse, must be >= 1
+ * @param default_timeout default timeout of the preparser, 0 for no limits.
  * @return a valid preparser object or NULL in case of error
  */
-VLC_API vlc_preparser_t *vlc_preparser_New( vlc_object_t *obj );
+VLC_API vlc_preparser_t *vlc_preparser_New( vlc_object_t *obj,
+                                            unsigned max_threads,
+                                            vlc_tick_t default_timeout );
 
 /**
  * This function enqueues the provided item to be preparsed or fetched.
